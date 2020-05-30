@@ -9,6 +9,22 @@
     <div class="card-body">
         <form method="POST" action="{{ route("admin.prospects.store") }}" enctype="multipart/form-data">
             @csrf
+            <div class="form-row">
+              <div class="col-md-6">
+                <label for="name">{{ trans('cruds.prospect.fields.name') }}</label>
+                <input type="text" name="name" class="form-control {{ $errors->has('name') ? 'is-invalid' : '' }}" value="{{ old('name', '') }}" required>
+                @if($errors->has('name'))
+                  <span class="text-danger">{{ $errors->first('name') }}</span>
+                @endif
+              </div>
+              <div class="col-md-6">
+                <label for="email">{{ trans('cruds.prospect.fields.email') }}</label>
+                <input type="email" name="email" class="form-control {{ $errors->has('email') ? 'is-invalid' : '' }}" value="{{ old('email', '') }}" required>
+                @if($errors->has('email'))
+                  <span class="text-danger">{{ $errors->first('email') }}</span>
+                @endif
+              </div>
+            </div>
             <div class="form-group">
                 <label for="logo">{{ trans('cruds.prospect.fields.logo') }}</label>
                 <div class="needsclick dropzone {{ $errors->has('logo') ? 'is-invalid' : '' }}" id="logo-dropzone">

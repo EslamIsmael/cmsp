@@ -12,7 +12,7 @@ Route::get('/home', function () {
 Auth::routes(['register' => false]);
 // Admin
 
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'middleware' => ['auth']], function () {
+Route::group(['prefix' => 'admin', 'as' => 'admin.', 'namespace' => 'Admin', 'middleware' => ['auth', 'check-admin']], function () {
     Route::get('/', 'HomeController@index')->name('home');
     // Permissions
     Route::delete('permissions/destroy', 'PermissionsController@massDestroy')->name('permissions.massDestroy');
@@ -42,4 +42,8 @@ Route::group(['prefix' => 'profile', 'as' => 'profile.', 'namespace' => 'Auth', 
         Route::get('password', 'ChangePasswordController@edit')->name('password.edit');
         Route::post('password', 'ChangePasswordController@update')->name('password.update');
     }
+});
+
+Route::group(['prefix' => 'prospect', 'as' => 'prospect.', 'namespace' => 'Prospect', 'middleware' => ['auth', 'check-prospect']], function () {
+    Route::get('/', 'HomeController@index')->name('home');
 });

@@ -27,6 +27,8 @@ class Prospect extends Model implements HasMedia
     ];
 
     protected $fillable = [
+        'user_id',
+        'added_by',
         'created_at',
         'updated_at',
         'deleted_at',
@@ -57,5 +59,15 @@ class Prospect extends Model implements HasMedia
     public function getFilesAttribute()
     {
         return $this->getMedia('files');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function addedBy()
+    {
+        return $this->belongsTo(User::class, 'added_by', 'id');
     }
 }

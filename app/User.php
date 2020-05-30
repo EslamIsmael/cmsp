@@ -14,6 +14,7 @@ use Spatie\MediaLibrary\HasMedia\HasMedia;
 use Spatie\MediaLibrary\HasMedia\HasMediaTrait;
 use Spatie\MediaLibrary\Models\Media;
 use \DateTimeInterface;
+use Exception;
 
 class User extends Authenticatable implements HasMedia
 {
@@ -105,5 +106,30 @@ class User extends Authenticatable implements HasMedia
     public function roles()
     {
         return $this->belongsToMany(Role::class);
+    }
+
+    public function prospect()
+    {
+        return $this->hasOne(Prospect::class, 'user_id');
+    }
+
+    public function addRole(String $title)
+    {
+        $role = Role::where('title', $title)->first();
+
+        if (!$role)
+            throw new Exception("The role $title does not exist within the roles table, make sure to add the role first before trying to assign it to the user");
+
+        $this->roles()->attach($role->id);
+    }
+
+    public function hasRole(String $role): bool
+    {
+        return $this->roles()->where('title', $role)->first() ? true : false;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles()->whereIn('title', $roles)->first() ? true : false;
     }
 }

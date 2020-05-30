@@ -8,8 +8,13 @@ use App\Http\Requests\MassDestroyProspectRequest;
 use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\UpdateProspectRequest;
 use App\Prospect;
+use App\User;
+use Exception;
 use Gate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Spatie\MediaLibrary\Models\Media;
 use Symfony\Component\HttpFoundation\Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -78,21 +83,49 @@ class ProspectsController extends Controller
 
     public function store(StoreProspectRequest $request)
     {
-        $prospect = Prospect::create($request->all());
 
-        if ($request->input('logo', false)) {
-            $prospect->addMedia(storage_path('tmp/uploads/' . $request->input('logo')))->toMediaCollection('logo');
+        try {
+            DB::beginTransaction();
+
+            $user = User::withTrashed()->where('email', $request->email)->first();
+
+            if ($user) {
+                if ($user->trashed())
+                    $user->restore();
+
+                $user->roles()->detach();
+            } else {
+                $user = User::create([
+                    'email' => $request->email,
+                    'name' => $request->name,
+                    'password' => Hash::make('Welcome!')
+                ]);
+            }
+
+            $user->addRole('Prospect');
+
+            $prospect = Prospect::create(['user_id' => $user->id, 'added_by' => Auth::user()->id]);
+
+            if ($request->input('logo', false)) {
+                $prospect->addMedia(storage_path('tmp/uploads/' . $request->input('logo')))->toMediaCollection('logo');
+            }
+
+            foreach ($request->input('files', []) as $file) {
+                $prospect->addMedia(storage_path('tmp/uploads/' . $file))->toMediaCollection('files');
+            }
+
+            if ($media = $request->input('ck-media', false)) {
+                Media::whereIn('id', $media)->update(['model_id' => $prospect->id]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.prospects.index');
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->withErrors(['exception' => $e->getMessage()])->withInput($request->all());
         }
-
-        foreach ($request->input('files', []) as $file) {
-            $prospect->addMedia(storage_path('tmp/uploads/' . $file))->toMediaCollection('files');
-        }
-
-        if ($media = $request->input('ck-media', false)) {
-            Media::whereIn('id', $media)->update(['model_id' => $prospect->id]);
-        }
-
-        return redirect()->route('admin.prospects.index');
     }
 
     public function edit(Prospect $prospect)
@@ -105,6 +138,8 @@ class ProspectsController extends Controller
     public function update(UpdateProspectRequest $request, Prospect $prospect)
     {
         $prospect->update($request->all());
+
+        $prospect->user->update(['email' => $request->email, 'name' => $request->name]);
 
         if ($request->input('logo', false)) {
             if (!$prospect->logo || $request->input('logo') !== $prospect->logo->file_name) {

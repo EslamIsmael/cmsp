@@ -18,6 +18,9 @@ class StoreProspectRequest extends FormRequest
 
     public function rules()
     {
-        return [];
+        return [
+            'name' => 'required',
+            'email' => ['required', 'unique:users,email,NULL,id,deleted_at,NULL']
+        ];
     }
 }
